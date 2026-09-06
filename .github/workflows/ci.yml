@@ -39,7 +39,7 @@ permissions:
 env:
   # The one variable that separates the arms: on baseline, action-checkout
   # skips its Set up Chalk step entirely.
-  CHALK_ON: ${{ github.event_name == 'workflow_dispatch' && inputs.leg != 'baseline' }}
+  CHALK_ON: ${{ inputs.leg == 'instrumented' }}
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
 
@@ -115,7 +115,7 @@ jobs:
         run: bash scripts/ci/common_ancestor_guard.test.sh
       - name: Reject unrelated PR history
         env:
-          HISTORY_CHECK_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          HISTORY_CHECK_SHA: ${{ 'push' == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: bash scripts/ci/common_ancestor_guard.sh origin/master "$HISTORY_CHECK_SHA"
 
   repo-structure:
@@ -192,7 +192,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      run: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed.outputs.run }}
+      run: ${{ 'push' == 'workflow_dispatch' && 'true' || steps.changed.outputs.run }}
     steps:
       - name: Checkout code
         uses: crashappsec/action-checkout@main
@@ -216,7 +216,7 @@ jobs:
 
           changed_files="$(mktemp)"
 
-          case "${{ github.event_name }}" in
+          case "${{ 'push' }}" in
             pull_request)
               git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > "$changed_files"
               ;;
@@ -359,7 +359,7 @@ jobs:
 
           changed_files="$(mktemp)"
 
-          case "${{ github.event_name }}" in
+          case "${{ 'push' }}" in
             pull_request)
               git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > "$changed_files"
               ;;
@@ -845,7 +845,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      run: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed.outputs.run }}
+      run: ${{ 'push' == 'workflow_dispatch' && 'true' || steps.changed.outputs.run }}
       scope: ${{ steps.changed.outputs.scope }}
     steps:
       - name: Checkout code
@@ -870,7 +870,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          case "${{ github.event_name }}" in
+          case "${{ 'push' }}" in
             pull_request)
               changed_files="$(mktemp)"
               git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > "$changed_files"
@@ -1048,10 +1048,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      docs: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.docs }}
-      nix: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.nix }}
-      nix_hash: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.nix_hash }}
-      web: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.web }}
+      docs: ${{ 'push' == 'workflow_dispatch' && 'true' || steps.filter.outputs.docs }}
+      nix: ${{ 'push' == 'workflow_dispatch' && 'true' || steps.filter.outputs.nix }}
+      nix_hash: ${{ 'push' == 'workflow_dispatch' && 'true' || steps.filter.outputs.nix_hash }}
+      web: ${{ 'push' == 'workflow_dispatch' && 'true' || steps.filter.outputs.web }}
     steps:
       - name: Checkout code
         uses: crashappsec/action-checkout@main
@@ -1075,7 +1075,7 @@ jobs:
 
           # Non-PR events (push to master, merge_group) always run every gated
           # job: warms caches and keeps the required gate exercising the full set.
-          case "${{ github.event_name }}" in
+          case "${{ 'push' }}" in
             pull_request) ;;
             *)
               {
@@ -1247,7 +1247,7 @@ jobs:
       - name: Detect zerocode changes
         id: changed
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ 'push' }}" = "pull_request" ]; then
             base="$(git merge-base origin/master HEAD)"
             if git diff --name-only "$base" HEAD | grep -q '^apps/zerocode/'; then
               echo "run=true" >> "$GITHUB_OUTPUT"
